@@ -1,0 +1,142 @@
+// Copyright 2024 NexHealth Inc.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package collector
+
+import (
+	"fmt"
+	"io"
+	"net"
+	"net/http"
+	"os"
+	"path/filepath"
+	"testing"
+)
+
+func TestNewUDSReader(t *testing.T) {
+	tempWithPasswordFile, err := os.MkdirTemp(t.TempDir(), "")
+	if err != nil {
+		t.Errorf("failed to create temporary directory: %s", err.Error())
+	}
+
+	instRegWithPasswordFile := filepath.Join(tempWithPasswordFile, "passenger.aBc0d2z")
+	err = os.Mkdir(instRegWithPasswordFile, 0755)
+	if err != nil {
+		t.Errorf("failed to create instance registry directory: %s", err.Error())
+	}
+
+	err = os.WriteFile(filepath.Join(instRegWithPasswordFile, ReadOnlyAdminPasswordFile), []byte("fake"), 0644)
+	if err != nil {
+		t.Errorf("failed to create password file: %s", err.Error())
+	}
+
+	tempWithoutPasswordFile, err := os.MkdirTemp(t.TempDir(), "")
+	if err != nil {
+		t.Errorf("failed to create temporary directory: %s", err.Error())
+	}
+
+	instRegWithoutPasswordFile := filepath.Join(tempWithoutPasswordFile, "passenger.zk9bVz7")
+	err = os.Mkdir(instRegWithoutPasswordFile, 0755)
+	if err != nil {
+		t.Errorf("failed to create instance registry directory: %s", err.Error())
+	}
+
+	// err = os.Mkdir(filepath.Join(instReg, filepath.Dir(UDSPath)), 0755)
+	// if err != nil {
+	// 	t.Errorf("failed to create temporary directory: %s", err.Error())
+	// }
+
+	tests := []struct {
+		path    string
+		wantErr bool
+	}{
+		{path: "", wantErr: true},
+		{path: "/zzz", wantErr: true},
+		{path: "/tmp", wantErr: true},
+		{path: tempWithoutPasswordFile, wantErr: true},
+		{path: tempWithPasswordFile, wantErr: false},
+	}
+
+	for _, test := range tests {
+		_, err := NewUDSReader(test.path)
+		if test.wantErr && err == nil {
+			t.Errorf("expected error with %q, but got %q", test.path, err)
+		}
+		if !test.wantErr && err != nil {
+			t.Errorf("expected no error with %q, but got %q", test.path, err)
+		}
+	}
+}
+
+func TestRead(t *testing.T) {
+	temp, err := os.MkdirTemp(os.TempDir(), "")
+	if err != nil {
+		t.Errorf("failed to create temporary directory: %s", err.Error())
+	}
+	defer os.RemoveAll(temp)
+	fmt.Println(temp)
+
+	instReg := filepath.Join(temp, "passenger.Lj9cMz7")
+	err = os.Mkdir(instReg, 0755)
+	if err != nil {
+		t.Errorf("failed to create instance registry directory: %s", err.Error())
+	}
+
+	err = os.WriteFile(filepath.Join(instReg, ReadOnlyAdminPasswordFile), []byte("fake"), 0644)
+	if err != nil {
+		t.Errorf("failed to create password file: %s", err.Error())
+	}
+
+	err = os.Mkdir(filepath.Join(instReg, filepath.Dir(UDSPath)), 0755)
+	if err != nil {
+		t.Errorf("failed to create temporary directory: %s", err.Error())
+	}
+
+	fixture, _ := os.ReadFile("testdata/passenger_xml_output.xml")
+
+	server := http.Server{
+		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Write(fixture)
+		}),
+	}
+
+	socketPath := filepath.Join(instReg, UDSPath)
+	unixListener, err := net.Listen("unix", socketPath)
+	if err != nil {
+		t.Fatalf("failed to start test server: %s", err.Error())
+	}
+	go func() {
+		server.Serve(unixListener)
+	}()
+	defer server.Close()
+
+	reader, err := NewUDSReader(temp)
+	if err != nil {
+		t.Errorf("failed to initialize UDSReader: %s", err.Error())
+	}
+
+	resp, err := reader.Read()
+	if err != nil {
+		t.Errorf("failed to read data: %s", err.Error())
+	}
+	defer resp.Close()
+
+	data, err := io.ReadAll(resp)
+	if err != nil {
+		t.Errorf("failed to read data: %s", err.Error())
+	}
+
+	if string(data) != string(fixture) {
+		t.Errorf("read data different from fixture")
+	}
+}

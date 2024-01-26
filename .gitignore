@@ -1,0 +1,6 @@
+/.build
+/.release
+/.tarballs
+/passenger_exporter
+*.tar.gz
+/vendor
