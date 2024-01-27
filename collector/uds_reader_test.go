@@ -23,8 +23,8 @@ import (
 	"testing"
 )
 
-func TestNewUDSReader(t *testing.T) {
-	tempWithPasswordFile, err := os.MkdirTemp(t.TempDir(), "")
+func TestRead_Files(t *testing.T) {
+	tempWithPasswordFile, err := os.MkdirTemp(os.TempDir(), "")
 	if err != nil {
 		t.Errorf("failed to create temporary directory: %s", err.Error())
 	}
@@ -40,7 +40,7 @@ func TestNewUDSReader(t *testing.T) {
 		t.Errorf("failed to create password file: %s", err.Error())
 	}
 
-	tempWithoutPasswordFile, err := os.MkdirTemp(t.TempDir(), "")
+	tempWithoutPasswordFile, err := os.MkdirTemp(os.TempDir(), "")
 	if err != nil {
 		t.Errorf("failed to create temporary directory: %s", err.Error())
 	}
@@ -51,34 +51,37 @@ func TestNewUDSReader(t *testing.T) {
 		t.Errorf("failed to create instance registry directory: %s", err.Error())
 	}
 
-	// err = os.Mkdir(filepath.Join(instReg, filepath.Dir(UDSPath)), 0755)
-	// if err != nil {
-	// 	t.Errorf("failed to create temporary directory: %s", err.Error())
-	// }
-
 	tests := []struct {
 		path    string
-		wantErr bool
+		wantErr string
 	}{
-		{path: "", wantErr: true},
-		{path: "/zzz", wantErr: true},
-		{path: "/tmp", wantErr: true},
-		{path: tempWithoutPasswordFile, wantErr: true},
-		{path: tempWithPasswordFile, wantErr: false},
+		{path: "", wantErr: `failed to detect Passenger instance registry directory`},
+		{path: "/zzz", wantErr: `failed to detect Passenger instance registry directory`},
+		{path: "/tmp", wantErr: `failed to detect Passenger instance registry directory`},
+		{path: tempWithoutPasswordFile, wantErr: fmt.Sprintf(`open %s/read_only_admin_password.txt: no such file or directory`, instRegWithoutPasswordFile)},
+		{path: tempWithPasswordFile, wantErr: fmt.Sprintf(`Get "http://unix/pool.xml": dial unix %s/agents.s/core_api: connect: no such file or directory`, instRegWithPasswordFile)},
 	}
 
 	for _, test := range tests {
-		_, err := NewUDSReader(test.path)
-		if test.wantErr && err == nil {
+		socketPath := filepath.Join(test.path, UDSPath)
+		closeFn, _ := socketListerner(socketPath, []byte{})
+		if closeFn != nil {
+			defer closeFn()
+		}
+
+		reader := NewUDSReader(test.path)
+		_, err = reader.Read()
+
+		if err == nil {
 			t.Errorf("expected error with %q, but got %q", test.path, err)
 		}
-		if !test.wantErr && err != nil {
-			t.Errorf("expected no error with %q, but got %q", test.path, err)
+		if err.Error() != test.wantErr {
+			t.Errorf("expected error to match with %q, but got %q", err.Error(), test.wantErr)
 		}
 	}
 }
 
-func TestRead(t *testing.T) {
+func TestRead_Data(t *testing.T) {
 	temp, err := os.MkdirTemp(os.TempDir(), "")
 	if err != nil {
 		t.Errorf("failed to create temporary directory: %s", err.Error())
@@ -104,27 +107,14 @@ func TestRead(t *testing.T) {
 
 	fixture, _ := os.ReadFile("testdata/passenger_xml_output.xml")
 
-	server := http.Server{
-		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Write(fixture)
-		}),
-	}
-
 	socketPath := filepath.Join(instReg, UDSPath)
-	unixListener, err := net.Listen("unix", socketPath)
+	closeFn, err := socketListerner(socketPath, fixture)
 	if err != nil {
 		t.Fatalf("failed to start test server: %s", err.Error())
 	}
-	go func() {
-		server.Serve(unixListener)
-	}()
-	defer server.Close()
+	defer closeFn()
 
-	reader, err := NewUDSReader(temp)
-	if err != nil {
-		t.Errorf("failed to initialize UDSReader: %s", err.Error())
-	}
-
+	reader := NewUDSReader(temp)
 	resp, err := reader.Read()
 	if err != nil {
 		t.Errorf("failed to read data: %s", err.Error())
@@ -139,4 +129,21 @@ func TestRead(t *testing.T) {
 	if string(data) != string(fixture) {
 		t.Errorf("read data different from fixture")
 	}
+}
+
+func socketListerner(path string, body []byte) (func() error, error) {
+	server := http.Server{
+		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Write(body)
+		}),
+	}
+
+	unixListener, err := net.Listen("unix", path)
+	if err != nil {
+		return nil, err
+	}
+	go func() {
+		server.Serve(unixListener)
+	}()
+	return server.Close, nil
 }

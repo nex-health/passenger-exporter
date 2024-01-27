@@ -31,12 +31,17 @@ const (
 )
 
 type UDSReader struct {
-	uds      string
-	password string
+	Path string
 }
 
-func NewUDSReader(path string) (*UDSReader, error) {
-	registry, err := filepath.Glob(filepath.Join(path, "passenger.???????"))
+func NewUDSReader(path string) *UDSReader {
+	return &UDSReader{
+		Path: path,
+	}
+}
+
+func (r *UDSReader) Read() (io.ReadCloser, error) {
+	registry, err := filepath.Glob(filepath.Join(r.Path, "passenger.???????"))
 	if err != nil {
 		return nil, err
 	}
@@ -53,18 +58,11 @@ func NewUDSReader(path string) (*UDSReader, error) {
 		return nil, err
 	}
 
-	return &UDSReader{
-		uds:      uds,
-		password: string(password),
-	}, nil
-}
-
-func (r *UDSReader) Read() (io.ReadCloser, error) {
 	client := http.Client{
 		Timeout: 1 * time.Second,
 		Transport: &http.Transport{
 			DialContext: func(_ context.Context, _, _ string) (net.Conn, error) {
-				return net.Dial("unix", r.uds)
+				return net.Dial("unix", uds)
 			},
 		},
 	}
@@ -73,7 +71,7 @@ func (r *UDSReader) Read() (io.ReadCloser, error) {
 		return nil, err
 	}
 
-	req.SetBasicAuth(ReadOnlyAdminUsername, r.password)
+	req.SetBasicAuth(ReadOnlyAdminUsername, string(password))
 
 	response, err := client.Do(req)
 	if err != nil {
