@@ -1,12 +1,16 @@
 ARG GO_VERSION=1.21
-ARG XX_VERSION=1.3.0
 
-FROM --platform=$BUILDPLATFORM tonistiigi/xx:${XX_VERSION} AS xx
-FROM --platform=$BUILDPLATFORM golang:${GO_VERSION} as builder
+FROM golang:${GO_VERSION} as builder
 
-COPY --from=xx / /
+ARG TARGETOS
+ARG TARGETARCH
 
-ARG TARGETPLATFORM
+RUN apt-get update -yqq && apt-get install -yqq git
+
+ARG PROMU_VERSION=0.15.0
+ADD https://github.com/prometheus/promu/releases/download/v${PROMU_VERSION}/promu-${PROMU_VERSION}.${TARGETOS}-${TARGETARCH}.tar.gz /tmp/
+RUN tar xf /tmp/promu-${PROMU_VERSION}.${TARGETOS}-${TARGETARCH}.tar.gz -C /tmp && \
+    install -m 755 /tmp/promu-${PROMU_VERSION}.${TARGETOS}-${TARGETARCH}/promu /usr/bin
 
 WORKDIR /workspace
 
@@ -18,8 +22,12 @@ RUN go mod download
 COPY cmd/ cmd/
 COPY collector/ collector/
 
+COPY .promu.yml .promu.yml
+COPY VERSION VERSION
+
 ENV CGO_ENABLED=0
-RUN xx-go build -trimpath -a -o passenger_exporter cmd/passenger_exporter/main.go
+RUN --mount=target=.git,type=bind,source=.git \
+    promu build
 
 FROM scratch
 LABEL maintainer="Aurel Canciu <aurel.canciu@nexhealth.com>"
