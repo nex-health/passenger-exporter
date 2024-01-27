@@ -54,12 +54,6 @@ func main() {
 	level.Info(logger).Log("msg", "Starting passenger_exporter", "version", version.Info())
 	level.Info(logger).Log("build_context", version.BuildContext())
 
-	udsReader, err := collector.NewUDSReader(*instanceRegistry)
-	if err != nil {
-		level.Error(logger).Log("msg", "Failed to initialize the metrics reader", "err", err)
-		os.Exit(1)
-	}
-
 	if *pidFile != "" {
 		pidCollector := collectors.NewProcessCollector(collectors.ProcessCollectorOpts{
 			PidFn:     prometheus.NewPidFileFn(*pidFile),
@@ -68,6 +62,7 @@ func main() {
 		prometheus.MustRegister(pidCollector)
 	}
 
+	udsReader := collector.NewUDSReader(*instanceRegistry)
 	collector := collector.New(udsReader)
 	prometheus.MustRegister(collector)
 
