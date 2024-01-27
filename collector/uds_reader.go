@@ -61,6 +61,7 @@ func (r *UDSReader) Read() (io.ReadCloser, error) {
 	client := http.Client{
 		Timeout: 1 * time.Second,
 		Transport: &http.Transport{
+			DisableKeepAlives: true,
 			DialContext: func(_ context.Context, _, _ string) (net.Conn, error) {
 				return net.Dial("unix", uds)
 			},
