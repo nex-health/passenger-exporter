@@ -337,9 +337,9 @@ func TestUpdateProcessIdentifiers(t *testing.T) {
 			"empty input",
 			map[string]int{},
 			[]Process{
-				Process{PID: "abc"},
-				Process{PID: "cdf"},
-				Process{PID: "dfe"},
+				{PID: "abc"},
+				{PID: "cdf"},
+				{PID: "dfe"},
 			},
 		),
 		newUpdateProcessSpec(
@@ -350,9 +350,9 @@ func TestUpdateProcessIdentifiers(t *testing.T) {
 				"dfe": 2,
 			},
 			[]Process{
-				Process{PID: "abc"},
-				Process{PID: "cdf"},
-				Process{PID: "dfe"},
+				{PID: "abc"},
+				{PID: "cdf"},
+				{PID: "dfe"},
 			},
 		),
 		newUpdateProcessSpec(
@@ -363,12 +363,12 @@ func TestUpdateProcessIdentifiers(t *testing.T) {
 				"dfe": 2,
 			},
 			[]Process{
-				Process{PID: "abc"},
-				Process{PID: "cdf"},
-				Process{PID: "dfe"},
-				Process{PID: "ghi"},
-				Process{PID: "jkl"},
-				Process{PID: "lmn"},
+				{PID: "abc"},
+				{PID: "cdf"},
+				{PID: "dfe"},
+				{PID: "ghi"},
+				{PID: "jkl"},
+				{PID: "lmn"},
 			},
 		),
 		newUpdateProcessSpec(
@@ -382,9 +382,9 @@ func TestUpdateProcessIdentifiers(t *testing.T) {
 				"lmn": 5,
 			},
 			[]Process{
-				Process{PID: "abc"},
-				Process{PID: "cdf"},
-				Process{PID: "dfe"},
+				{PID: "abc"},
+				{PID: "cdf"},
+				{PID: "dfe"},
 			},
 		),
 	} {
@@ -415,10 +415,10 @@ func TestInsertingNewProcesses(t *testing.T) {
 			"efg": 3,
 		},
 		[]Process{
-			Process{PID: "abc"},
-			Process{PID: "dfe"},
-			Process{PID: "newPID"},
-			Process{PID: "newPID2"},
+			{PID: "abc"},
+			{PID: "dfe"},
+			{PID: "newPID"},
+			{PID: "newPID2"},
 		},
 	)
 
