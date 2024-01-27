@@ -98,12 +98,10 @@ var (
 
 type Collector struct {
 	MetricsReader
-
-	PIDFile string
 }
 
-func New(reader MetricsReader, pidFile string) *Collector {
-	return &Collector{MetricsReader: reader, PIDFile: pidFile}
+func New(reader MetricsReader) *Collector {
+	return &Collector{MetricsReader: reader}
 }
 
 func (c Collector) Describe(ch chan<- *prometheus.Desc) {

@@ -294,7 +294,7 @@ passenger_version{version="5.0.26"} 1
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			reader := &fakeReader{ReaderFunc: tc.readerFunc}
-			collector := New(reader, "")
+			collector := New(reader)
 
 			buf := bytes.NewReader([]byte(tc.wantMetrics))
 			err := testutil.CollectAndCompare(collector, buf)
@@ -435,5 +435,5 @@ func TestInsertingNewProcesses(t *testing.T) {
 }
 
 func newTestCollector() *Collector {
-	return New(&fakeReader{}, "")
+	return New(&fakeReader{})
 }

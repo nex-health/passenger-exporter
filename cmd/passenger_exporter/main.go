@@ -22,6 +22,7 @@ import (
 	"github.com/go-kit/log/level"
 	"github.com/nex-health/passenger-exporter/collector"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/prometheus/common/promlog"
 	"github.com/prometheus/common/promlog/flag"
@@ -59,7 +60,15 @@ func main() {
 		os.Exit(1)
 	}
 
-	collector := collector.New(udsReader, *pidFile)
+	if *pidFile != "" {
+		pidCollector := collectors.NewProcessCollector(collectors.ProcessCollectorOpts{
+			PidFn:     prometheus.NewPidFileFn(*pidFile),
+			Namespace: "passenger",
+		})
+		prometheus.MustRegister(pidCollector)
+	}
+
+	collector := collector.New(udsReader)
 	prometheus.MustRegister(collector)
 
 	http.Handle(*metricsPath, promhttp.Handler())
