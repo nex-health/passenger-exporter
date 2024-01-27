@@ -61,6 +61,7 @@ jobs:
             ${{ env.CONTAINER_IMAGE }}
           tags: |
             type=raw,value=${{ steps.prep.outputs.VERSION }}
+            type=raw,value=latest
 
       - name: Build and tag image
         id: build
