@@ -29,7 +29,7 @@ ENV CGO_ENABLED=0
 RUN --mount=target=.git,type=bind,source=.git \
     promu build
 
-FROM scratch
+FROM quay.io/prometheus/busybox:latest
 LABEL maintainer="Aurel Canciu <aurel.canciu@nexhealth.com>"
 
 COPY --from=builder /workspace/passenger_exporter /bin/passenger_exporter
