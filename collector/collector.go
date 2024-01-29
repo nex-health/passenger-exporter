@@ -97,11 +97,11 @@ var (
 )
 
 type Collector struct {
-	MetricsReader
+	reader MetricsReader
 }
 
 func New(reader MetricsReader) *Collector {
-	return &Collector{MetricsReader: reader}
+	return &Collector{reader: reader}
 }
 
 func (c Collector) Describe(ch chan<- *prometheus.Desc) {
@@ -123,7 +123,7 @@ func (c Collector) Describe(ch chan<- *prometheus.Desc) {
 // Mostly copied from https://github.com/stuartnelson3/passenger_exporter/blob/80b16566cdab445f6e68f967019a95b67f608aca/main.go
 func (c Collector) Collect(ch chan<- prometheus.Metric) {
 	var processIdentifiers map[string]int
-	data, err := c.MetricsReader.Read()
+	data, err := c.reader.Read()
 	if err != nil {
 		ch <- prometheus.NewInvalidMetric(prometheus.NewDesc(prometheus.BuildFQName(namespace, "read", "error"), "Error reading metrics data.", nil, nil), err)
 		return
