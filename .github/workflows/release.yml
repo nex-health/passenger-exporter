@@ -16,7 +16,7 @@ permissions:
   packages: write # needed for ghcr access
 
 env:
-  CONTAINER_IMAGE: ghcr.io/nex-health/passenger-exporter
+  GHCR_CONTAINER_IMAGE: ghcr.io/nex-health/passenger-exporter
 
 jobs:
   release:
@@ -58,7 +58,7 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: |
-            ${{ env.CONTAINER_IMAGE }}
+            ${{ env.GHCR_CONTAINER_IMAGE }}
           tags: |
             type=raw,value=${{ steps.prep.outputs.VERSION }}
             type=raw,value=latest
@@ -83,4 +83,4 @@ jobs:
         env:
           COSIGN_EXPERIMENTAL: 1
         run: |
-          cosign sign --yes ${{ env.CONTAINER_IMAGE }}:${{ steps.prep.outputs.VERSION }}
+          cosign sign --yes ${{ env.GHCR_CONTAINER_IMAGE }}@${{ steps.build.outputs.digest }}
