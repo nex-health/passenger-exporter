@@ -17,6 +17,7 @@ package collector
 
 import (
 	"math"
+	"os"
 	"strconv"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -32,76 +33,86 @@ var (
 	up = prometheus.NewDesc(
 		prometheus.BuildFQName(namespace, "", "up"),
 		"Passenger state.",
-		[]string{}, nil,
+		[]string{"hostname"}, nil,
 	)
 	version = prometheus.NewDesc(
 		prometheus.BuildFQName(namespace, "", "version"),
 		"Phusion Passenger version.",
-		[]string{"version"}, nil,
+		[]string{"version", "hostname"}, nil,
 	)
 	toplevelQueue = prometheus.NewDesc(
 		prometheus.BuildFQName(namespace, "", "top_level_queue"),
 		"Number of requests in the top-level queue.",
-		[]string{}, nil,
+		[]string{"hostname"}, nil,
 	)
 	maxProcessCount = prometheus.NewDesc(
 		prometheus.BuildFQName(namespace, "", "max_processes"),
 		"Configured maximum number of processes.",
-		[]string{}, nil,
+		[]string{"hostname"}, nil,
 	)
 	currentProcessCount = prometheus.NewDesc(
 		prometheus.BuildFQName(namespace, "", "current_processes"),
 		"Current number of processes.",
-		[]string{}, nil,
+		[]string{"hostname"}, nil,
 	)
 	appCount = prometheus.NewDesc(
 		prometheus.BuildFQName(namespace, "", "app_count"),
 		"Number of apps.",
-		[]string{}, nil,
+		[]string{"hostname"}, nil,
 	)
 	appQueue = prometheus.NewDesc(
 		prometheus.BuildFQName(namespace, "", "app_queue"),
 		"Number of requests in app process queues.",
-		[]string{"name"}, nil,
+		[]string{"name", "hostname"}, nil,
 	)
 	appGroupQueue = prometheus.NewDesc(
 		prometheus.BuildFQName(namespace, "", "app_group_queue"),
 		"Number of requests in app group process queues.",
-		[]string{"group", "default"}, nil,
+		[]string{"group", "default", "hostname"}, nil,
 	)
 	appProcsSpawning = prometheus.NewDesc(
 		prometheus.BuildFQName(namespace, "", "app_procs_spawning"),
 		"Number of processes spawning.",
-		[]string{"name"}, nil,
+		[]string{"name", "hostname"}, nil,
 	)
 	requestsProcessed = prometheus.NewDesc(
 		prometheus.BuildFQName(namespace, "", "requests_processed_total"),
 		"Number of processes served by a process.",
-		[]string{"name", "id"}, nil,
+		[]string{"name", "id", "hostname"}, nil,
 	)
 	sessions = prometheus.NewDesc(
 		prometheus.BuildFQName(namespace, "", "current_sessions"),
 		"Number of sessions currently being handled by a process.",
-		[]string{"name", "id"}, nil,
+		[]string{"name", "id", "hostname"}, nil,
 	)
 	procStartTime = prometheus.NewDesc(
 		prometheus.BuildFQName(namespace, "", "proc_start_time_seconds"),
 		"Number of seconds since processor started.",
-		[]string{"name", "id", "codeRevision"}, nil,
+		[]string{"name", "id", "hostname"}, nil,
 	)
 	procMemory = prometheus.NewDesc(
 		prometheus.BuildFQName(namespace, "", "proc_memory"),
 		"Memory consumed by a process",
-		[]string{"name", "id"}, nil,
+		[]string{"name", "id", "hostname"}, nil,
 	)
 )
 
 type Collector struct {
-	reader MetricsReader
+	reader   MetricsReader
+	hostname string
 }
 
 func New(reader MetricsReader) *Collector {
-	return &Collector{reader: reader}
+	hostname, ok := os.LookupEnv("HOSTNAME")
+	if !ok {
+		var err error
+		hostname, err = os.Hostname()
+		if err != nil {
+			hostname = ""
+		}
+	}
+
+	return &Collector{reader: reader, hostname: hostname}
 }
 
 func (c Collector) Describe(ch chan<- *prometheus.Desc) {
@@ -136,32 +147,32 @@ func (c Collector) Collect(ch chan<- prometheus.Metric) {
 		return
 	}
 
-	ch <- prometheus.MustNewConstMetric(up, prometheus.GaugeValue, 1)
+	ch <- prometheus.MustNewConstMetric(up, prometheus.GaugeValue, 1, c.hostname)
 
-	ch <- prometheus.MustNewConstMetric(version, prometheus.GaugeValue, 1, info.PassengerVersion)
+	ch <- prometheus.MustNewConstMetric(version, prometheus.GaugeValue, 1, info.PassengerVersion, c.hostname)
 
-	ch <- prometheus.MustNewConstMetric(toplevelQueue, prometheus.GaugeValue, parseFloat(info.TopLevelRequestsInQueue))
-	ch <- prometheus.MustNewConstMetric(maxProcessCount, prometheus.GaugeValue, parseFloat(info.MaxProcessCount))
-	ch <- prometheus.MustNewConstMetric(currentProcessCount, prometheus.GaugeValue, parseFloat(info.CurrentProcessCount))
-	ch <- prometheus.MustNewConstMetric(appCount, prometheus.GaugeValue, parseFloat(info.AppCount))
+	ch <- prometheus.MustNewConstMetric(toplevelQueue, prometheus.GaugeValue, parseFloat(info.TopLevelRequestsInQueue), c.hostname)
+	ch <- prometheus.MustNewConstMetric(maxProcessCount, prometheus.GaugeValue, parseFloat(info.MaxProcessCount), c.hostname)
+	ch <- prometheus.MustNewConstMetric(currentProcessCount, prometheus.GaugeValue, parseFloat(info.CurrentProcessCount), c.hostname)
+	ch <- prometheus.MustNewConstMetric(appCount, prometheus.GaugeValue, parseFloat(info.AppCount), c.hostname)
 
 	for _, sg := range info.SuperGroups {
-		ch <- prometheus.MustNewConstMetric(appQueue, prometheus.GaugeValue, parseFloat(sg.RequestsInQueue), sg.Name)
-		ch <- prometheus.MustNewConstMetric(appProcsSpawning, prometheus.GaugeValue, parseFloat(sg.Group.ProcessesSpawning), sg.Name)
+		ch <- prometheus.MustNewConstMetric(appQueue, prometheus.GaugeValue, parseFloat(sg.RequestsInQueue), sg.Name, c.hostname)
+		ch <- prometheus.MustNewConstMetric(appProcsSpawning, prometheus.GaugeValue, parseFloat(sg.Group.ProcessesSpawning), sg.Name, c.hostname)
 
-		ch <- prometheus.MustNewConstMetric(appGroupQueue, prometheus.GaugeValue, parseFloat(sg.Group.GetWaitListSize), sg.Group.Name, sg.Group.Default)
+		ch <- prometheus.MustNewConstMetric(appGroupQueue, prometheus.GaugeValue, parseFloat(sg.Group.GetWaitListSize), sg.Group.Name, sg.Group.Default, c.hostname)
 
 		// Update process identifiers map.
 		processIdentifiers := updateProcesses(processIdentifiers, sg.Group.Processes)
 		for _, proc := range sg.Group.Processes {
 			if bucketID, ok := processIdentifiers[proc.PID]; ok {
-				ch <- prometheus.MustNewConstMetric(procMemory, prometheus.GaugeValue, parseFloat(proc.RealMemory), sg.Name, strconv.Itoa(bucketID))
-				ch <- prometheus.MustNewConstMetric(requestsProcessed, prometheus.CounterValue, parseFloat(proc.RequestsProcessed), sg.Name, strconv.Itoa(bucketID))
-				ch <- prometheus.MustNewConstMetric(sessions, prometheus.GaugeValue, parseFloat(proc.Sessions), sg.Name, strconv.Itoa(bucketID))
+				ch <- prometheus.MustNewConstMetric(procMemory, prometheus.GaugeValue, parseFloat(proc.RealMemory), sg.Name, strconv.Itoa(bucketID), c.hostname)
+				ch <- prometheus.MustNewConstMetric(requestsProcessed, prometheus.CounterValue, parseFloat(proc.RequestsProcessed), sg.Name, strconv.Itoa(bucketID), c.hostname)
+				ch <- prometheus.MustNewConstMetric(sessions, prometheus.GaugeValue, parseFloat(proc.Sessions), sg.Name, strconv.Itoa(bucketID), c.hostname)
 
 				if startTime, err := strconv.Atoi(proc.SpawnStartTime); err == nil {
 					ch <- prometheus.MustNewConstMetric(procStartTime, prometheus.GaugeValue, float64(startTime/nanosecondsPerSecond),
-						sg.Name, strconv.Itoa(bucketID), proc.CodeRevision,
+						sg.Name, strconv.Itoa(bucketID), c.hostname,
 					)
 				}
 			}

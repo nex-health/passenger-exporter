@@ -33,8 +33,33 @@ func (r *fakeReader) Read() (io.ReadCloser, error) {
 	return r.ReaderFunc()
 }
 
+func TestNew(t *testing.T) {
+	reader := &fakeReader{}
+	c := New(reader)
+
+	if c.reader != reader {
+		t.Errorf("expected reader field to equal given argument")
+	}
+
+	hostname, _ := os.Hostname()
+	c = New(reader)
+
+	if c.hostname != hostname {
+		t.Errorf("expected hostname field to equal %q, got %q", hostname, c.hostname)
+	}
+
+	t.Setenv("HOSTNAME", "fake-hostname")
+	c = New(reader)
+
+	if c.hostname != "fake-hostname" {
+		t.Errorf("expected hostname field to equal %q, got %q", "fake-hostname", c.hostname)
+	}
+}
+
 func TestCollect(t *testing.T) {
 	fixture, _ := os.Open("testdata/passenger_xml_output.xml")
+
+	t.Setenv("HOSTNAME", "local-machine")
 
 	for _, tc := range []struct {
 		name        string
@@ -47,231 +72,231 @@ func TestCollect(t *testing.T) {
 			name: "collect with valid response",
 			wantMetrics: `# HELP passenger_app_count Number of apps.
 # TYPE passenger_app_count gauge
-passenger_app_count 1
+passenger_app_count{hostname="local-machine"} 1
 # HELP passenger_app_group_queue Number of requests in app group process queues.
 # TYPE passenger_app_group_queue gauge
-passenger_app_group_queue{default="true",group="/srv/app/my_app (production)"} 0
+passenger_app_group_queue{default="true",group="/srv/app/my_app (production)",hostname="local-machine"} 0
 # HELP passenger_app_procs_spawning Number of processes spawning.
 # TYPE passenger_app_procs_spawning gauge
-passenger_app_procs_spawning{name="/srv/app/my_app (production)"} 0
+passenger_app_procs_spawning{hostname="local-machine",name="/srv/app/my_app (production)"} 0
 # HELP passenger_app_queue Number of requests in app process queues.
 # TYPE passenger_app_queue gauge
-passenger_app_queue{name="/srv/app/my_app (production)"} 5
+passenger_app_queue{hostname="local-machine",name="/srv/app/my_app (production)"} 5
 # HELP passenger_current_processes Current number of processes.
 # TYPE passenger_current_processes gauge
-passenger_current_processes 48
+passenger_current_processes{hostname="local-machine"} 48
 # HELP passenger_current_sessions Number of sessions currently being handled by a process.
 # TYPE passenger_current_sessions gauge
-passenger_current_sessions{id="0",name="/srv/app/my_app (production)"} 1
-passenger_current_sessions{id="1",name="/srv/app/my_app (production)"} 1
-passenger_current_sessions{id="10",name="/srv/app/my_app (production)"} 1
-passenger_current_sessions{id="11",name="/srv/app/my_app (production)"} 0
-passenger_current_sessions{id="12",name="/srv/app/my_app (production)"} 0
-passenger_current_sessions{id="13",name="/srv/app/my_app (production)"} 0
-passenger_current_sessions{id="14",name="/srv/app/my_app (production)"} 0
-passenger_current_sessions{id="15",name="/srv/app/my_app (production)"} 0
-passenger_current_sessions{id="16",name="/srv/app/my_app (production)"} 0
-passenger_current_sessions{id="17",name="/srv/app/my_app (production)"} 0
-passenger_current_sessions{id="18",name="/srv/app/my_app (production)"} 0
-passenger_current_sessions{id="19",name="/srv/app/my_app (production)"} 0
-passenger_current_sessions{id="2",name="/srv/app/my_app (production)"} 1
-passenger_current_sessions{id="20",name="/srv/app/my_app (production)"} 0
-passenger_current_sessions{id="21",name="/srv/app/my_app (production)"} 0
-passenger_current_sessions{id="22",name="/srv/app/my_app (production)"} 0
-passenger_current_sessions{id="23",name="/srv/app/my_app (production)"} 0
-passenger_current_sessions{id="24",name="/srv/app/my_app (production)"} 0
-passenger_current_sessions{id="25",name="/srv/app/my_app (production)"} 0
-passenger_current_sessions{id="26",name="/srv/app/my_app (production)"} 0
-passenger_current_sessions{id="27",name="/srv/app/my_app (production)"} 0
-passenger_current_sessions{id="28",name="/srv/app/my_app (production)"} 0
-passenger_current_sessions{id="29",name="/srv/app/my_app (production)"} 0
-passenger_current_sessions{id="3",name="/srv/app/my_app (production)"} 1
-passenger_current_sessions{id="30",name="/srv/app/my_app (production)"} 0
-passenger_current_sessions{id="31",name="/srv/app/my_app (production)"} 0
-passenger_current_sessions{id="32",name="/srv/app/my_app (production)"} 0
-passenger_current_sessions{id="33",name="/srv/app/my_app (production)"} 0
-passenger_current_sessions{id="34",name="/srv/app/my_app (production)"} 0
-passenger_current_sessions{id="35",name="/srv/app/my_app (production)"} 0
-passenger_current_sessions{id="36",name="/srv/app/my_app (production)"} 0
-passenger_current_sessions{id="37",name="/srv/app/my_app (production)"} 0
-passenger_current_sessions{id="38",name="/srv/app/my_app (production)"} 0
-passenger_current_sessions{id="39",name="/srv/app/my_app (production)"} 0
-passenger_current_sessions{id="4",name="/srv/app/my_app (production)"} 1
-passenger_current_sessions{id="40",name="/srv/app/my_app (production)"} 0
-passenger_current_sessions{id="41",name="/srv/app/my_app (production)"} 0
-passenger_current_sessions{id="42",name="/srv/app/my_app (production)"} 0
-passenger_current_sessions{id="43",name="/srv/app/my_app (production)"} 0
-passenger_current_sessions{id="44",name="/srv/app/my_app (production)"} 0
-passenger_current_sessions{id="45",name="/srv/app/my_app (production)"} 0
-passenger_current_sessions{id="46",name="/srv/app/my_app (production)"} 0
-passenger_current_sessions{id="47",name="/srv/app/my_app (production)"} 0
-passenger_current_sessions{id="5",name="/srv/app/my_app (production)"} 1
-passenger_current_sessions{id="6",name="/srv/app/my_app (production)"} 1
-passenger_current_sessions{id="7",name="/srv/app/my_app (production)"} 0
-passenger_current_sessions{id="8",name="/srv/app/my_app (production)"} 1
-passenger_current_sessions{id="9",name="/srv/app/my_app (production)"} 1
+passenger_current_sessions{hostname="local-machine",id="0",name="/srv/app/my_app (production)"} 1
+passenger_current_sessions{hostname="local-machine",id="1",name="/srv/app/my_app (production)"} 1
+passenger_current_sessions{hostname="local-machine",id="10",name="/srv/app/my_app (production)"} 1
+passenger_current_sessions{hostname="local-machine",id="11",name="/srv/app/my_app (production)"} 0
+passenger_current_sessions{hostname="local-machine",id="12",name="/srv/app/my_app (production)"} 0
+passenger_current_sessions{hostname="local-machine",id="13",name="/srv/app/my_app (production)"} 0
+passenger_current_sessions{hostname="local-machine",id="14",name="/srv/app/my_app (production)"} 0
+passenger_current_sessions{hostname="local-machine",id="15",name="/srv/app/my_app (production)"} 0
+passenger_current_sessions{hostname="local-machine",id="16",name="/srv/app/my_app (production)"} 0
+passenger_current_sessions{hostname="local-machine",id="17",name="/srv/app/my_app (production)"} 0
+passenger_current_sessions{hostname="local-machine",id="18",name="/srv/app/my_app (production)"} 0
+passenger_current_sessions{hostname="local-machine",id="19",name="/srv/app/my_app (production)"} 0
+passenger_current_sessions{hostname="local-machine",id="2",name="/srv/app/my_app (production)"} 1
+passenger_current_sessions{hostname="local-machine",id="20",name="/srv/app/my_app (production)"} 0
+passenger_current_sessions{hostname="local-machine",id="21",name="/srv/app/my_app (production)"} 0
+passenger_current_sessions{hostname="local-machine",id="22",name="/srv/app/my_app (production)"} 0
+passenger_current_sessions{hostname="local-machine",id="23",name="/srv/app/my_app (production)"} 0
+passenger_current_sessions{hostname="local-machine",id="24",name="/srv/app/my_app (production)"} 0
+passenger_current_sessions{hostname="local-machine",id="25",name="/srv/app/my_app (production)"} 0
+passenger_current_sessions{hostname="local-machine",id="26",name="/srv/app/my_app (production)"} 0
+passenger_current_sessions{hostname="local-machine",id="27",name="/srv/app/my_app (production)"} 0
+passenger_current_sessions{hostname="local-machine",id="28",name="/srv/app/my_app (production)"} 0
+passenger_current_sessions{hostname="local-machine",id="29",name="/srv/app/my_app (production)"} 0
+passenger_current_sessions{hostname="local-machine",id="3",name="/srv/app/my_app (production)"} 1
+passenger_current_sessions{hostname="local-machine",id="30",name="/srv/app/my_app (production)"} 0
+passenger_current_sessions{hostname="local-machine",id="31",name="/srv/app/my_app (production)"} 0
+passenger_current_sessions{hostname="local-machine",id="32",name="/srv/app/my_app (production)"} 0
+passenger_current_sessions{hostname="local-machine",id="33",name="/srv/app/my_app (production)"} 0
+passenger_current_sessions{hostname="local-machine",id="34",name="/srv/app/my_app (production)"} 0
+passenger_current_sessions{hostname="local-machine",id="35",name="/srv/app/my_app (production)"} 0
+passenger_current_sessions{hostname="local-machine",id="36",name="/srv/app/my_app (production)"} 0
+passenger_current_sessions{hostname="local-machine",id="37",name="/srv/app/my_app (production)"} 0
+passenger_current_sessions{hostname="local-machine",id="38",name="/srv/app/my_app (production)"} 0
+passenger_current_sessions{hostname="local-machine",id="39",name="/srv/app/my_app (production)"} 0
+passenger_current_sessions{hostname="local-machine",id="4",name="/srv/app/my_app (production)"} 1
+passenger_current_sessions{hostname="local-machine",id="40",name="/srv/app/my_app (production)"} 0
+passenger_current_sessions{hostname="local-machine",id="41",name="/srv/app/my_app (production)"} 0
+passenger_current_sessions{hostname="local-machine",id="42",name="/srv/app/my_app (production)"} 0
+passenger_current_sessions{hostname="local-machine",id="43",name="/srv/app/my_app (production)"} 0
+passenger_current_sessions{hostname="local-machine",id="44",name="/srv/app/my_app (production)"} 0
+passenger_current_sessions{hostname="local-machine",id="45",name="/srv/app/my_app (production)"} 0
+passenger_current_sessions{hostname="local-machine",id="46",name="/srv/app/my_app (production)"} 0
+passenger_current_sessions{hostname="local-machine",id="47",name="/srv/app/my_app (production)"} 0
+passenger_current_sessions{hostname="local-machine",id="5",name="/srv/app/my_app (production)"} 1
+passenger_current_sessions{hostname="local-machine",id="6",name="/srv/app/my_app (production)"} 1
+passenger_current_sessions{hostname="local-machine",id="7",name="/srv/app/my_app (production)"} 0
+passenger_current_sessions{hostname="local-machine",id="8",name="/srv/app/my_app (production)"} 1
+passenger_current_sessions{hostname="local-machine",id="9",name="/srv/app/my_app (production)"} 1
 # HELP passenger_max_processes Configured maximum number of processes.
 # TYPE passenger_max_processes gauge
-passenger_max_processes 48
+passenger_max_processes{hostname="local-machine"} 48
 # HELP passenger_proc_memory Memory consumed by a process
 # TYPE passenger_proc_memory gauge
-passenger_proc_memory{id="0",name="/srv/app/my_app (production)"} 330012
-passenger_proc_memory{id="1",name="/srv/app/my_app (production)"} 303296
-passenger_proc_memory{id="10",name="/srv/app/my_app (production)"} 303984
-passenger_proc_memory{id="11",name="/srv/app/my_app (production)"} 289680
-passenger_proc_memory{id="12",name="/srv/app/my_app (production)"} 306148
-passenger_proc_memory{id="13",name="/srv/app/my_app (production)"} 293128
-passenger_proc_memory{id="14",name="/srv/app/my_app (production)"} 322064
-passenger_proc_memory{id="15",name="/srv/app/my_app (production)"} 297124
-passenger_proc_memory{id="16",name="/srv/app/my_app (production)"} 290364
-passenger_proc_memory{id="17",name="/srv/app/my_app (production)"} 292056
-passenger_proc_memory{id="18",name="/srv/app/my_app (production)"} 272784
-passenger_proc_memory{id="19",name="/srv/app/my_app (production)"} 281176
-passenger_proc_memory{id="2",name="/srv/app/my_app (production)"} 288884
-passenger_proc_memory{id="20",name="/srv/app/my_app (production)"} 269520
-passenger_proc_memory{id="21",name="/srv/app/my_app (production)"} 269404
-passenger_proc_memory{id="22",name="/srv/app/my_app (production)"} 275844
-passenger_proc_memory{id="23",name="/srv/app/my_app (production)"} 276412
-passenger_proc_memory{id="24",name="/srv/app/my_app (production)"} 267316
-passenger_proc_memory{id="25",name="/srv/app/my_app (production)"} 265152
-passenger_proc_memory{id="26",name="/srv/app/my_app (production)"} 261144
-passenger_proc_memory{id="27",name="/srv/app/my_app (production)"} 260224
-passenger_proc_memory{id="28",name="/srv/app/my_app (production)"} 243688
-passenger_proc_memory{id="29",name="/srv/app/my_app (production)"} 243724
-passenger_proc_memory{id="3",name="/srv/app/my_app (production)"} 293316
-passenger_proc_memory{id="30",name="/srv/app/my_app (production)"} 261492
-passenger_proc_memory{id="31",name="/srv/app/my_app (production)"} 260196
-passenger_proc_memory{id="32",name="/srv/app/my_app (production)"} 244720
-passenger_proc_memory{id="33",name="/srv/app/my_app (production)"} 261268
-passenger_proc_memory{id="34",name="/srv/app/my_app (production)"} 261320
-passenger_proc_memory{id="35",name="/srv/app/my_app (production)"} 244740
-passenger_proc_memory{id="36",name="/srv/app/my_app (production)"} 244656
-passenger_proc_memory{id="37",name="/srv/app/my_app (production)"} 244860
-passenger_proc_memory{id="38",name="/srv/app/my_app (production)"} 244752
-passenger_proc_memory{id="39",name="/srv/app/my_app (production)"} 244708
-passenger_proc_memory{id="4",name="/srv/app/my_app (production)"} 330412
-passenger_proc_memory{id="40",name="/srv/app/my_app (production)"} 244684
-passenger_proc_memory{id="41",name="/srv/app/my_app (production)"} 255428
-passenger_proc_memory{id="42",name="/srv/app/my_app (production)"} 243744
-passenger_proc_memory{id="43",name="/srv/app/my_app (production)"} 254432
-passenger_proc_memory{id="44",name="/srv/app/my_app (production)"} 243592
-passenger_proc_memory{id="45",name="/srv/app/my_app (production)"} 244640
-passenger_proc_memory{id="46",name="/srv/app/my_app (production)"} 242576
-passenger_proc_memory{id="47",name="/srv/app/my_app (production)"} 255376
-passenger_proc_memory{id="5",name="/srv/app/my_app (production)"} 306904
-passenger_proc_memory{id="6",name="/srv/app/my_app (production)"} 330644
-passenger_proc_memory{id="7",name="/srv/app/my_app (production)"} 315104
-passenger_proc_memory{id="8",name="/srv/app/my_app (production)"} 288508
-passenger_proc_memory{id="9",name="/srv/app/my_app (production)"} 306520
+passenger_proc_memory{hostname="local-machine",id="0",name="/srv/app/my_app (production)"} 330012
+passenger_proc_memory{hostname="local-machine",id="1",name="/srv/app/my_app (production)"} 303296
+passenger_proc_memory{hostname="local-machine",id="10",name="/srv/app/my_app (production)"} 303984
+passenger_proc_memory{hostname="local-machine",id="11",name="/srv/app/my_app (production)"} 289680
+passenger_proc_memory{hostname="local-machine",id="12",name="/srv/app/my_app (production)"} 306148
+passenger_proc_memory{hostname="local-machine",id="13",name="/srv/app/my_app (production)"} 293128
+passenger_proc_memory{hostname="local-machine",id="14",name="/srv/app/my_app (production)"} 322064
+passenger_proc_memory{hostname="local-machine",id="15",name="/srv/app/my_app (production)"} 297124
+passenger_proc_memory{hostname="local-machine",id="16",name="/srv/app/my_app (production)"} 290364
+passenger_proc_memory{hostname="local-machine",id="17",name="/srv/app/my_app (production)"} 292056
+passenger_proc_memory{hostname="local-machine",id="18",name="/srv/app/my_app (production)"} 272784
+passenger_proc_memory{hostname="local-machine",id="19",name="/srv/app/my_app (production)"} 281176
+passenger_proc_memory{hostname="local-machine",id="2",name="/srv/app/my_app (production)"} 288884
+passenger_proc_memory{hostname="local-machine",id="20",name="/srv/app/my_app (production)"} 269520
+passenger_proc_memory{hostname="local-machine",id="21",name="/srv/app/my_app (production)"} 269404
+passenger_proc_memory{hostname="local-machine",id="22",name="/srv/app/my_app (production)"} 275844
+passenger_proc_memory{hostname="local-machine",id="23",name="/srv/app/my_app (production)"} 276412
+passenger_proc_memory{hostname="local-machine",id="24",name="/srv/app/my_app (production)"} 267316
+passenger_proc_memory{hostname="local-machine",id="25",name="/srv/app/my_app (production)"} 265152
+passenger_proc_memory{hostname="local-machine",id="26",name="/srv/app/my_app (production)"} 261144
+passenger_proc_memory{hostname="local-machine",id="27",name="/srv/app/my_app (production)"} 260224
+passenger_proc_memory{hostname="local-machine",id="28",name="/srv/app/my_app (production)"} 243688
+passenger_proc_memory{hostname="local-machine",id="29",name="/srv/app/my_app (production)"} 243724
+passenger_proc_memory{hostname="local-machine",id="3",name="/srv/app/my_app (production)"} 293316
+passenger_proc_memory{hostname="local-machine",id="30",name="/srv/app/my_app (production)"} 261492
+passenger_proc_memory{hostname="local-machine",id="31",name="/srv/app/my_app (production)"} 260196
+passenger_proc_memory{hostname="local-machine",id="32",name="/srv/app/my_app (production)"} 244720
+passenger_proc_memory{hostname="local-machine",id="33",name="/srv/app/my_app (production)"} 261268
+passenger_proc_memory{hostname="local-machine",id="34",name="/srv/app/my_app (production)"} 261320
+passenger_proc_memory{hostname="local-machine",id="35",name="/srv/app/my_app (production)"} 244740
+passenger_proc_memory{hostname="local-machine",id="36",name="/srv/app/my_app (production)"} 244656
+passenger_proc_memory{hostname="local-machine",id="37",name="/srv/app/my_app (production)"} 244860
+passenger_proc_memory{hostname="local-machine",id="38",name="/srv/app/my_app (production)"} 244752
+passenger_proc_memory{hostname="local-machine",id="39",name="/srv/app/my_app (production)"} 244708
+passenger_proc_memory{hostname="local-machine",id="4",name="/srv/app/my_app (production)"} 330412
+passenger_proc_memory{hostname="local-machine",id="40",name="/srv/app/my_app (production)"} 244684
+passenger_proc_memory{hostname="local-machine",id="41",name="/srv/app/my_app (production)"} 255428
+passenger_proc_memory{hostname="local-machine",id="42",name="/srv/app/my_app (production)"} 243744
+passenger_proc_memory{hostname="local-machine",id="43",name="/srv/app/my_app (production)"} 254432
+passenger_proc_memory{hostname="local-machine",id="44",name="/srv/app/my_app (production)"} 243592
+passenger_proc_memory{hostname="local-machine",id="45",name="/srv/app/my_app (production)"} 244640
+passenger_proc_memory{hostname="local-machine",id="46",name="/srv/app/my_app (production)"} 242576
+passenger_proc_memory{hostname="local-machine",id="47",name="/srv/app/my_app (production)"} 255376
+passenger_proc_memory{hostname="local-machine",id="5",name="/srv/app/my_app (production)"} 306904
+passenger_proc_memory{hostname="local-machine",id="6",name="/srv/app/my_app (production)"} 330644
+passenger_proc_memory{hostname="local-machine",id="7",name="/srv/app/my_app (production)"} 315104
+passenger_proc_memory{hostname="local-machine",id="8",name="/srv/app/my_app (production)"} 288508
+passenger_proc_memory{hostname="local-machine",id="9",name="/srv/app/my_app (production)"} 306520
 # HELP passenger_proc_start_time_seconds Number of seconds since processor started.
 # TYPE passenger_proc_start_time_seconds gauge
-passenger_proc_start_time_seconds{codeRevision="4fef3ec",id="0",name="/srv/app/my_app (production)"} 1.462477e+06
-passenger_proc_start_time_seconds{codeRevision="4fef3ec",id="1",name="/srv/app/my_app (production)"} 1.462477e+06
-passenger_proc_start_time_seconds{codeRevision="4fef3ec",id="10",name="/srv/app/my_app (production)"} 1.462477e+06
-passenger_proc_start_time_seconds{codeRevision="4fef3ec",id="11",name="/srv/app/my_app (production)"} 1.462477e+06
-passenger_proc_start_time_seconds{codeRevision="4fef3ec",id="12",name="/srv/app/my_app (production)"} 1.462477e+06
-passenger_proc_start_time_seconds{codeRevision="4fef3ec",id="13",name="/srv/app/my_app (production)"} 1.462477e+06
-passenger_proc_start_time_seconds{codeRevision="4fef3ec",id="14",name="/srv/app/my_app (production)"} 1.462477e+06
-passenger_proc_start_time_seconds{codeRevision="4fef3ec",id="15",name="/srv/app/my_app (production)"} 1.462477e+06
-passenger_proc_start_time_seconds{codeRevision="4fef3ec",id="16",name="/srv/app/my_app (production)"} 1.462477e+06
-passenger_proc_start_time_seconds{codeRevision="4fef3ec",id="17",name="/srv/app/my_app (production)"} 1.462477e+06
-passenger_proc_start_time_seconds{codeRevision="4fef3ec",id="18",name="/srv/app/my_app (production)"} 1.462477e+06
-passenger_proc_start_time_seconds{codeRevision="4fef3ec",id="19",name="/srv/app/my_app (production)"} 1.462477e+06
-passenger_proc_start_time_seconds{codeRevision="4fef3ec",id="2",name="/srv/app/my_app (production)"} 1.462477e+06
-passenger_proc_start_time_seconds{codeRevision="4fef3ec",id="20",name="/srv/app/my_app (production)"} 1.462477e+06
-passenger_proc_start_time_seconds{codeRevision="4fef3ec",id="21",name="/srv/app/my_app (production)"} 1.462477e+06
-passenger_proc_start_time_seconds{codeRevision="4fef3ec",id="22",name="/srv/app/my_app (production)"} 1.462477e+06
-passenger_proc_start_time_seconds{codeRevision="4fef3ec",id="23",name="/srv/app/my_app (production)"} 1.462477e+06
-passenger_proc_start_time_seconds{codeRevision="4fef3ec",id="24",name="/srv/app/my_app (production)"} 1.462477e+06
-passenger_proc_start_time_seconds{codeRevision="4fef3ec",id="25",name="/srv/app/my_app (production)"} 1.462477e+06
-passenger_proc_start_time_seconds{codeRevision="4fef3ec",id="26",name="/srv/app/my_app (production)"} 1.462477e+06
-passenger_proc_start_time_seconds{codeRevision="4fef3ec",id="27",name="/srv/app/my_app (production)"} 1.462477e+06
-passenger_proc_start_time_seconds{codeRevision="4fef3ec",id="28",name="/srv/app/my_app (production)"} 1.462477e+06
-passenger_proc_start_time_seconds{codeRevision="4fef3ec",id="29",name="/srv/app/my_app (production)"} 1.462477e+06
-passenger_proc_start_time_seconds{codeRevision="4fef3ec",id="3",name="/srv/app/my_app (production)"} 1.462477e+06
-passenger_proc_start_time_seconds{codeRevision="4fef3ec",id="30",name="/srv/app/my_app (production)"} 1.462477e+06
-passenger_proc_start_time_seconds{codeRevision="4fef3ec",id="31",name="/srv/app/my_app (production)"} 1.462477e+06
-passenger_proc_start_time_seconds{codeRevision="4fef3ec",id="32",name="/srv/app/my_app (production)"} 1.462477e+06
-passenger_proc_start_time_seconds{codeRevision="4fef3ec",id="33",name="/srv/app/my_app (production)"} 1.462477e+06
-passenger_proc_start_time_seconds{codeRevision="4fef3ec",id="34",name="/srv/app/my_app (production)"} 1.462477e+06
-passenger_proc_start_time_seconds{codeRevision="4fef3ec",id="35",name="/srv/app/my_app (production)"} 1.462477e+06
-passenger_proc_start_time_seconds{codeRevision="4fef3ec",id="36",name="/srv/app/my_app (production)"} 1.462477e+06
-passenger_proc_start_time_seconds{codeRevision="4fef3ec",id="37",name="/srv/app/my_app (production)"} 1.462478e+06
-passenger_proc_start_time_seconds{codeRevision="4fef3ec",id="38",name="/srv/app/my_app (production)"} 1.462478e+06
-passenger_proc_start_time_seconds{codeRevision="4fef3ec",id="39",name="/srv/app/my_app (production)"} 1.462478e+06
-passenger_proc_start_time_seconds{codeRevision="4fef3ec",id="4",name="/srv/app/my_app (production)"} 1.462477e+06
-passenger_proc_start_time_seconds{codeRevision="4fef3ec",id="40",name="/srv/app/my_app (production)"} 1.462478e+06
-passenger_proc_start_time_seconds{codeRevision="4fef3ec",id="41",name="/srv/app/my_app (production)"} 1.462478e+06
-passenger_proc_start_time_seconds{codeRevision="4fef3ec",id="42",name="/srv/app/my_app (production)"} 1.462478e+06
-passenger_proc_start_time_seconds{codeRevision="4fef3ec",id="43",name="/srv/app/my_app (production)"} 1.462478e+06
-passenger_proc_start_time_seconds{codeRevision="4fef3ec",id="44",name="/srv/app/my_app (production)"} 1.462478e+06
-passenger_proc_start_time_seconds{codeRevision="4fef3ec",id="45",name="/srv/app/my_app (production)"} 1.462478e+06
-passenger_proc_start_time_seconds{codeRevision="4fef3ec",id="46",name="/srv/app/my_app (production)"} 1.462478e+06
-passenger_proc_start_time_seconds{codeRevision="4fef3ec",id="47",name="/srv/app/my_app (production)"} 1.462478e+06
-passenger_proc_start_time_seconds{codeRevision="4fef3ec",id="5",name="/srv/app/my_app (production)"} 1.462477e+06
-passenger_proc_start_time_seconds{codeRevision="4fef3ec",id="6",name="/srv/app/my_app (production)"} 1.462477e+06
-passenger_proc_start_time_seconds{codeRevision="4fef3ec",id="7",name="/srv/app/my_app (production)"} 1.462477e+06
-passenger_proc_start_time_seconds{codeRevision="4fef3ec",id="8",name="/srv/app/my_app (production)"} 1.462477e+06
-passenger_proc_start_time_seconds{codeRevision="4fef3ec",id="9",name="/srv/app/my_app (production)"} 1.462477e+06
+passenger_proc_start_time_seconds{hostname="local-machine",id="0",name="/srv/app/my_app (production)"} 1.462477e+06
+passenger_proc_start_time_seconds{hostname="local-machine",id="1",name="/srv/app/my_app (production)"} 1.462477e+06
+passenger_proc_start_time_seconds{hostname="local-machine",id="10",name="/srv/app/my_app (production)"} 1.462477e+06
+passenger_proc_start_time_seconds{hostname="local-machine",id="11",name="/srv/app/my_app (production)"} 1.462477e+06
+passenger_proc_start_time_seconds{hostname="local-machine",id="12",name="/srv/app/my_app (production)"} 1.462477e+06
+passenger_proc_start_time_seconds{hostname="local-machine",id="13",name="/srv/app/my_app (production)"} 1.462477e+06
+passenger_proc_start_time_seconds{hostname="local-machine",id="14",name="/srv/app/my_app (production)"} 1.462477e+06
+passenger_proc_start_time_seconds{hostname="local-machine",id="15",name="/srv/app/my_app (production)"} 1.462477e+06
+passenger_proc_start_time_seconds{hostname="local-machine",id="16",name="/srv/app/my_app (production)"} 1.462477e+06
+passenger_proc_start_time_seconds{hostname="local-machine",id="17",name="/srv/app/my_app (production)"} 1.462477e+06
+passenger_proc_start_time_seconds{hostname="local-machine",id="18",name="/srv/app/my_app (production)"} 1.462477e+06
+passenger_proc_start_time_seconds{hostname="local-machine",id="19",name="/srv/app/my_app (production)"} 1.462477e+06
+passenger_proc_start_time_seconds{hostname="local-machine",id="2",name="/srv/app/my_app (production)"} 1.462477e+06
+passenger_proc_start_time_seconds{hostname="local-machine",id="20",name="/srv/app/my_app (production)"} 1.462477e+06
+passenger_proc_start_time_seconds{hostname="local-machine",id="21",name="/srv/app/my_app (production)"} 1.462477e+06
+passenger_proc_start_time_seconds{hostname="local-machine",id="22",name="/srv/app/my_app (production)"} 1.462477e+06
+passenger_proc_start_time_seconds{hostname="local-machine",id="23",name="/srv/app/my_app (production)"} 1.462477e+06
+passenger_proc_start_time_seconds{hostname="local-machine",id="24",name="/srv/app/my_app (production)"} 1.462477e+06
+passenger_proc_start_time_seconds{hostname="local-machine",id="25",name="/srv/app/my_app (production)"} 1.462477e+06
+passenger_proc_start_time_seconds{hostname="local-machine",id="26",name="/srv/app/my_app (production)"} 1.462477e+06
+passenger_proc_start_time_seconds{hostname="local-machine",id="27",name="/srv/app/my_app (production)"} 1.462477e+06
+passenger_proc_start_time_seconds{hostname="local-machine",id="28",name="/srv/app/my_app (production)"} 1.462477e+06
+passenger_proc_start_time_seconds{hostname="local-machine",id="29",name="/srv/app/my_app (production)"} 1.462477e+06
+passenger_proc_start_time_seconds{hostname="local-machine",id="3",name="/srv/app/my_app (production)"} 1.462477e+06
+passenger_proc_start_time_seconds{hostname="local-machine",id="30",name="/srv/app/my_app (production)"} 1.462477e+06
+passenger_proc_start_time_seconds{hostname="local-machine",id="31",name="/srv/app/my_app (production)"} 1.462477e+06
+passenger_proc_start_time_seconds{hostname="local-machine",id="32",name="/srv/app/my_app (production)"} 1.462477e+06
+passenger_proc_start_time_seconds{hostname="local-machine",id="33",name="/srv/app/my_app (production)"} 1.462477e+06
+passenger_proc_start_time_seconds{hostname="local-machine",id="34",name="/srv/app/my_app (production)"} 1.462477e+06
+passenger_proc_start_time_seconds{hostname="local-machine",id="35",name="/srv/app/my_app (production)"} 1.462477e+06
+passenger_proc_start_time_seconds{hostname="local-machine",id="36",name="/srv/app/my_app (production)"} 1.462477e+06
+passenger_proc_start_time_seconds{hostname="local-machine",id="37",name="/srv/app/my_app (production)"} 1.462478e+06
+passenger_proc_start_time_seconds{hostname="local-machine",id="38",name="/srv/app/my_app (production)"} 1.462478e+06
+passenger_proc_start_time_seconds{hostname="local-machine",id="39",name="/srv/app/my_app (production)"} 1.462478e+06
+passenger_proc_start_time_seconds{hostname="local-machine",id="4",name="/srv/app/my_app (production)"} 1.462477e+06
+passenger_proc_start_time_seconds{hostname="local-machine",id="40",name="/srv/app/my_app (production)"} 1.462478e+06
+passenger_proc_start_time_seconds{hostname="local-machine",id="41",name="/srv/app/my_app (production)"} 1.462478e+06
+passenger_proc_start_time_seconds{hostname="local-machine",id="42",name="/srv/app/my_app (production)"} 1.462478e+06
+passenger_proc_start_time_seconds{hostname="local-machine",id="43",name="/srv/app/my_app (production)"} 1.462478e+06
+passenger_proc_start_time_seconds{hostname="local-machine",id="44",name="/srv/app/my_app (production)"} 1.462478e+06
+passenger_proc_start_time_seconds{hostname="local-machine",id="45",name="/srv/app/my_app (production)"} 1.462478e+06
+passenger_proc_start_time_seconds{hostname="local-machine",id="46",name="/srv/app/my_app (production)"} 1.462478e+06
+passenger_proc_start_time_seconds{hostname="local-machine",id="47",name="/srv/app/my_app (production)"} 1.462478e+06
+passenger_proc_start_time_seconds{hostname="local-machine",id="5",name="/srv/app/my_app (production)"} 1.462477e+06
+passenger_proc_start_time_seconds{hostname="local-machine",id="6",name="/srv/app/my_app (production)"} 1.462477e+06
+passenger_proc_start_time_seconds{hostname="local-machine",id="7",name="/srv/app/my_app (production)"} 1.462477e+06
+passenger_proc_start_time_seconds{hostname="local-machine",id="8",name="/srv/app/my_app (production)"} 1.462477e+06
+passenger_proc_start_time_seconds{hostname="local-machine",id="9",name="/srv/app/my_app (production)"} 1.462477e+06
 # HELP passenger_requests_processed_total Number of processes served by a process.
 # TYPE passenger_requests_processed_total counter
-passenger_requests_processed_total{id="0",name="/srv/app/my_app (production)"} 43578
-passenger_requests_processed_total{id="1",name="/srv/app/my_app (production)"} 48130
-passenger_requests_processed_total{id="10",name="/srv/app/my_app (production)"} 26226
-passenger_requests_processed_total{id="11",name="/srv/app/my_app (production)"} 22752
-passenger_requests_processed_total{id="12",name="/srv/app/my_app (production)"} 18646
-passenger_requests_processed_total{id="13",name="/srv/app/my_app (production)"} 15254
-passenger_requests_processed_total{id="14",name="/srv/app/my_app (production)"} 11561
-passenger_requests_processed_total{id="15",name="/srv/app/my_app (production)"} 9107
-passenger_requests_processed_total{id="16",name="/srv/app/my_app (production)"} 6831
-passenger_requests_processed_total{id="17",name="/srv/app/my_app (production)"} 4804
-passenger_requests_processed_total{id="18",name="/srv/app/my_app (production)"} 3420
-passenger_requests_processed_total{id="19",name="/srv/app/my_app (production)"} 2150
-passenger_requests_processed_total{id="2",name="/srv/app/my_app (production)"} 46701
-passenger_requests_processed_total{id="20",name="/srv/app/my_app (production)"} 1333
-passenger_requests_processed_total{id="21",name="/srv/app/my_app (production)"} 809
-passenger_requests_processed_total{id="22",name="/srv/app/my_app (production)"} 504
-passenger_requests_processed_total{id="23",name="/srv/app/my_app (production)"} 288
-passenger_requests_processed_total{id="24",name="/srv/app/my_app (production)"} 161
-passenger_requests_processed_total{id="25",name="/srv/app/my_app (production)"} 99
-passenger_requests_processed_total{id="26",name="/srv/app/my_app (production)"} 60
-passenger_requests_processed_total{id="27",name="/srv/app/my_app (production)"} 49
-passenger_requests_processed_total{id="28",name="/srv/app/my_app (production)"} 24
-passenger_requests_processed_total{id="29",name="/srv/app/my_app (production)"} 19
-passenger_requests_processed_total{id="3",name="/srv/app/my_app (production)"} 45134
-passenger_requests_processed_total{id="30",name="/srv/app/my_app (production)"} 9
-passenger_requests_processed_total{id="31",name="/srv/app/my_app (production)"} 5
-passenger_requests_processed_total{id="32",name="/srv/app/my_app (production)"} 4
-passenger_requests_processed_total{id="33",name="/srv/app/my_app (production)"} 4
-passenger_requests_processed_total{id="34",name="/srv/app/my_app (production)"} 2
-passenger_requests_processed_total{id="35",name="/srv/app/my_app (production)"} 2
-passenger_requests_processed_total{id="36",name="/srv/app/my_app (production)"} 0
-passenger_requests_processed_total{id="37",name="/srv/app/my_app (production)"} 0
-passenger_requests_processed_total{id="38",name="/srv/app/my_app (production)"} 0
-passenger_requests_processed_total{id="39",name="/srv/app/my_app (production)"} 0
-passenger_requests_processed_total{id="4",name="/srv/app/my_app (production)"} 42932
-passenger_requests_processed_total{id="40",name="/srv/app/my_app (production)"} 0
-passenger_requests_processed_total{id="41",name="/srv/app/my_app (production)"} 0
-passenger_requests_processed_total{id="42",name="/srv/app/my_app (production)"} 0
-passenger_requests_processed_total{id="43",name="/srv/app/my_app (production)"} 0
-passenger_requests_processed_total{id="44",name="/srv/app/my_app (production)"} 0
-passenger_requests_processed_total{id="45",name="/srv/app/my_app (production)"} 0
-passenger_requests_processed_total{id="46",name="/srv/app/my_app (production)"} 0
-passenger_requests_processed_total{id="47",name="/srv/app/my_app (production)"} 0
-passenger_requests_processed_total{id="5",name="/srv/app/my_app (production)"} 40815
-passenger_requests_processed_total{id="6",name="/srv/app/my_app (production)"} 38615
-passenger_requests_processed_total{id="7",name="/srv/app/my_app (production)"} 35802
-passenger_requests_processed_total{id="8",name="/srv/app/my_app (production)"} 33600
-passenger_requests_processed_total{id="9",name="/srv/app/my_app (production)"} 30490
+passenger_requests_processed_total{hostname="local-machine",id="0",name="/srv/app/my_app (production)"} 43578
+passenger_requests_processed_total{hostname="local-machine",id="1",name="/srv/app/my_app (production)"} 48130
+passenger_requests_processed_total{hostname="local-machine",id="10",name="/srv/app/my_app (production)"} 26226
+passenger_requests_processed_total{hostname="local-machine",id="11",name="/srv/app/my_app (production)"} 22752
+passenger_requests_processed_total{hostname="local-machine",id="12",name="/srv/app/my_app (production)"} 18646
+passenger_requests_processed_total{hostname="local-machine",id="13",name="/srv/app/my_app (production)"} 15254
+passenger_requests_processed_total{hostname="local-machine",id="14",name="/srv/app/my_app (production)"} 11561
+passenger_requests_processed_total{hostname="local-machine",id="15",name="/srv/app/my_app (production)"} 9107
+passenger_requests_processed_total{hostname="local-machine",id="16",name="/srv/app/my_app (production)"} 6831
+passenger_requests_processed_total{hostname="local-machine",id="17",name="/srv/app/my_app (production)"} 4804
+passenger_requests_processed_total{hostname="local-machine",id="18",name="/srv/app/my_app (production)"} 3420
+passenger_requests_processed_total{hostname="local-machine",id="19",name="/srv/app/my_app (production)"} 2150
+passenger_requests_processed_total{hostname="local-machine",id="2",name="/srv/app/my_app (production)"} 46701
+passenger_requests_processed_total{hostname="local-machine",id="20",name="/srv/app/my_app (production)"} 1333
+passenger_requests_processed_total{hostname="local-machine",id="21",name="/srv/app/my_app (production)"} 809
+passenger_requests_processed_total{hostname="local-machine",id="22",name="/srv/app/my_app (production)"} 504
+passenger_requests_processed_total{hostname="local-machine",id="23",name="/srv/app/my_app (production)"} 288
+passenger_requests_processed_total{hostname="local-machine",id="24",name="/srv/app/my_app (production)"} 161
+passenger_requests_processed_total{hostname="local-machine",id="25",name="/srv/app/my_app (production)"} 99
+passenger_requests_processed_total{hostname="local-machine",id="26",name="/srv/app/my_app (production)"} 60
+passenger_requests_processed_total{hostname="local-machine",id="27",name="/srv/app/my_app (production)"} 49
+passenger_requests_processed_total{hostname="local-machine",id="28",name="/srv/app/my_app (production)"} 24
+passenger_requests_processed_total{hostname="local-machine",id="29",name="/srv/app/my_app (production)"} 19
+passenger_requests_processed_total{hostname="local-machine",id="3",name="/srv/app/my_app (production)"} 45134
+passenger_requests_processed_total{hostname="local-machine",id="30",name="/srv/app/my_app (production)"} 9
+passenger_requests_processed_total{hostname="local-machine",id="31",name="/srv/app/my_app (production)"} 5
+passenger_requests_processed_total{hostname="local-machine",id="32",name="/srv/app/my_app (production)"} 4
+passenger_requests_processed_total{hostname="local-machine",id="33",name="/srv/app/my_app (production)"} 4
+passenger_requests_processed_total{hostname="local-machine",id="34",name="/srv/app/my_app (production)"} 2
+passenger_requests_processed_total{hostname="local-machine",id="35",name="/srv/app/my_app (production)"} 2
+passenger_requests_processed_total{hostname="local-machine",id="36",name="/srv/app/my_app (production)"} 0
+passenger_requests_processed_total{hostname="local-machine",id="37",name="/srv/app/my_app (production)"} 0
+passenger_requests_processed_total{hostname="local-machine",id="38",name="/srv/app/my_app (production)"} 0
+passenger_requests_processed_total{hostname="local-machine",id="39",name="/srv/app/my_app (production)"} 0
+passenger_requests_processed_total{hostname="local-machine",id="4",name="/srv/app/my_app (production)"} 42932
+passenger_requests_processed_total{hostname="local-machine",id="40",name="/srv/app/my_app (production)"} 0
+passenger_requests_processed_total{hostname="local-machine",id="41",name="/srv/app/my_app (production)"} 0
+passenger_requests_processed_total{hostname="local-machine",id="42",name="/srv/app/my_app (production)"} 0
+passenger_requests_processed_total{hostname="local-machine",id="43",name="/srv/app/my_app (production)"} 0
+passenger_requests_processed_total{hostname="local-machine",id="44",name="/srv/app/my_app (production)"} 0
+passenger_requests_processed_total{hostname="local-machine",id="45",name="/srv/app/my_app (production)"} 0
+passenger_requests_processed_total{hostname="local-machine",id="46",name="/srv/app/my_app (production)"} 0
+passenger_requests_processed_total{hostname="local-machine",id="47",name="/srv/app/my_app (production)"} 0
+passenger_requests_processed_total{hostname="local-machine",id="5",name="/srv/app/my_app (production)"} 40815
+passenger_requests_processed_total{hostname="local-machine",id="6",name="/srv/app/my_app (production)"} 38615
+passenger_requests_processed_total{hostname="local-machine",id="7",name="/srv/app/my_app (production)"} 35802
+passenger_requests_processed_total{hostname="local-machine",id="8",name="/srv/app/my_app (production)"} 33600
+passenger_requests_processed_total{hostname="local-machine",id="9",name="/srv/app/my_app (production)"} 30490
 # HELP passenger_top_level_queue Number of requests in the top-level queue.
 # TYPE passenger_top_level_queue gauge
-passenger_top_level_queue 3
+passenger_top_level_queue{hostname="local-machine"} 3
 # HELP passenger_up Passenger state.
 # TYPE passenger_up gauge
-passenger_up 1
+passenger_up{hostname="local-machine"} 1
 # HELP passenger_version Phusion Passenger version.
 # TYPE passenger_version gauge
-passenger_version{version="5.0.26"} 1
+passenger_version{hostname="local-machine",version="5.0.26"} 1
 `,
 			readerFunc: func() (io.ReadCloser, error) { return fixture, nil },
 			status:     http.StatusOK,
