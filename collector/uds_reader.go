@@ -21,6 +21,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 )
 
@@ -32,6 +33,8 @@ const (
 
 type UDSReader struct {
 	Path string
+
+	sync.Mutex
 }
 
 func NewUDSReader(path string) *UDSReader {
@@ -41,6 +44,9 @@ func NewUDSReader(path string) *UDSReader {
 }
 
 func (r *UDSReader) Read() (io.ReadCloser, error) {
+	r.Lock()
+	defer r.Unlock()
+
 	registry, err := filepath.Glob(filepath.Join(r.Path, "passenger.???????"))
 	if err != nil {
 		return nil, err
