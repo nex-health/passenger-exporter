@@ -7,7 +7,7 @@ require (
 	github.com/prometheus/client_golang v1.18.0
 	github.com/prometheus/common v0.46.0
 	github.com/prometheus/exporter-toolkit v0.11.0
-	golang.org/x/net v0.20.0
+	golang.org/x/net v0.21.0
 )
 
 require (
@@ -33,8 +33,8 @@ require (
 	github.com/prometheus/client_model v0.5.0 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect
 	github.com/stretchr/testify v1.8.4 // indirect
-	golang.org/x/crypto v0.18.0 // indirect
-	golang.org/x/sys v0.16.0 // indirect
+	golang.org/x/crypto v0.19.0 // indirect
+	golang.org/x/sys v0.17.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	google.golang.org/protobuf v1.32.0 // indirect
 )
