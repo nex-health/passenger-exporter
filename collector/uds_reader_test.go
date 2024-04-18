@@ -133,7 +133,7 @@ func TestRead_Data(t *testing.T) {
 
 func socketListerner(path string, body []byte) (func() error, error) {
 	server := http.Server{
-		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		Handler: http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			w.Write(body)
 		}),
 	}
