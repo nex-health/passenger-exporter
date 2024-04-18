@@ -50,9 +50,6 @@ jobs:
           username: nexerbot
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build
-        run: make build
-
       - name: Generate images meta
         id: meta
         uses: docker/metadata-action@v5
