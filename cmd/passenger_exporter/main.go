@@ -31,10 +31,6 @@ import (
 	webflag "github.com/prometheus/exporter-toolkit/web/kingpinflag"
 )
 
-func init() {
-	prometheus.MustRegister(version.NewCollector("passenger_exporter"))
-}
-
 func main() {
 	var (
 		webConfig   = webflag.AddFlags(kingpin.CommandLine, ":9149")
@@ -86,11 +82,11 @@ func main() {
 		os.Exit(1)
 	}
 	http.Handle("/", landingHandler)
-	http.HandleFunc("/-/healthy", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/-/healthy", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprintf(w, "OK")
 	})
-	http.HandleFunc("/-/ready", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/-/ready", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprintf(w, "OK")
 	})
