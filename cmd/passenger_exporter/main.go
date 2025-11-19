@@ -19,13 +19,12 @@ import (
 	"os"
 
 	"github.com/alecthomas/kingpin/v2"
-	"github.com/go-kit/log/level"
 	"github.com/nex-health/passenger-exporter/collector"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/prometheus/common/promlog"
-	"github.com/prometheus/common/promlog/flag"
+	"github.com/prometheus/common/promslog"
+	"github.com/prometheus/common/promslog/flag"
 	"github.com/prometheus/common/version"
 	"github.com/prometheus/exporter-toolkit/web"
 	webflag "github.com/prometheus/exporter-toolkit/web/kingpinflag"
@@ -40,15 +39,15 @@ func main() {
 		pidFile          = kingpin.Flag("passenger.pid-file", "Optional path to a file containing the passenger/nginx PID for additional metrics.").Default("").String()
 	)
 
-	promlogConfig := &promlog.Config{}
-	flag.AddFlags(kingpin.CommandLine, promlogConfig)
+	promslogConfig := &promslog.Config{}
+	flag.AddFlags(kingpin.CommandLine, promslogConfig)
 	kingpin.Version(version.Print("passenger_exporter"))
 	kingpin.HelpFlag.Short('h')
 	kingpin.Parse()
-	logger := promlog.New(promlogConfig)
+	logger := promslog.New(promslogConfig)
 
-	level.Info(logger).Log("msg", "Starting passenger_exporter", "version", version.Info())
-	level.Info(logger).Log("build_context", version.BuildContext())
+	logger.Info("Starting passenger_exporter", "version", version.Info())
+	logger.Info("Build context", "context", version.BuildContext())
 
 	if *pidFile != "" {
 		pidCollector := collectors.NewProcessCollector(collectors.ProcessCollectorOpts{
@@ -78,7 +77,7 @@ func main() {
 	}
 	landingHandler, err := web.NewLandingPage(landingConfig)
 	if err != nil {
-		level.Error(logger).Log("err", err)
+		logger.Error("Error creating landing page", "err", err)
 		os.Exit(1)
 	}
 	http.Handle("/", landingHandler)
@@ -93,7 +92,7 @@ func main() {
 
 	srv := &http.Server{}
 	if err := web.ListenAndServe(srv, webConfig, logger); err != nil {
-		level.Error(logger).Log("msg", "Error starting HTTP server", "err", err)
+		logger.Error("Error starting HTTP server", "err", err)
 		os.Exit(1)
 	}
 }
