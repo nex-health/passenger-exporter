@@ -1,4 +1,4 @@
-ARG GO_VERSION=1.25
+ARG GO_VERSION=1.27.3
 
 FROM golang:${GO_VERSION} AS builder
 
@@ -7,7 +7,7 @@ ARG TARGETARCH
 
 RUN apt-get update -yqq && apt-get install -yqq git
 
-ARG PROMU_VERSION=0.17.0
+ARG PROMU_VERSION=0.20.0
 ADD https://github.com/prometheus/promu/releases/download/v${PROMU_VERSION}/promu-${PROMU_VERSION}.${TARGETOS}-${TARGETARCH}.tar.gz /tmp/
 RUN tar xf /tmp/promu-${PROMU_VERSION}.${TARGETOS}-${TARGETARCH}.tar.gz -C /tmp && \
     install -m 755 /tmp/promu-${PROMU_VERSION}.${TARGETOS}-${TARGETARCH}/promu /usr/bin
